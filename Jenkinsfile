@@ -1,3 +1,4 @@
+
 pipeline {
 
     agent {
@@ -14,7 +15,7 @@ pipeline {
         IMAGE_NAME     = "my-app"
         ECR_REGISTRY   = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
         IMAGE_TAG      = "${env.BUILD_NUMBER}"
-	DEPLOY_DIR     = "/root/AWS_DR"
+	    DEPLOY_DIR     = "/root/AWS_DR"
     }
 
     stages {
@@ -156,7 +157,7 @@ EOF
                     git reset --hard
                     git pull origin main
                 else
-                    git clone git@github.com:SanthaprakashMahendran/testing-dr.git $DEPLOY_DIR
+                    git clone git@github.com:SanthaprakashMahendran/aws-testing-dr.git $DEPLOY_DIR
                     cd $DEPLOY_DIR
                 fi
 

@@ -14,6 +14,7 @@ pipeline {
         IMAGE_NAME     = "my-app"
         ECR_REGISTRY   = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
         IMAGE_TAG      = "${env.BUILD_NUMBER}"
+	DEPLOY_DIR     = "/root/AWS_DR"
     }
 
     stages {
@@ -138,38 +139,44 @@ EOF
     }
 }
 
-	  stage('Update Deployment YAML') {
-            steps {
-                sshagent(['git-key']) {
-                    sh '''
-                        echo "==== Setting up SSH known_hosts ===="
-                        mkdir -p ~/.ssh
-                        ssh-keyscan github.com >> ~/.ssh/known_hosts
-                        chmod 644 ~/.ssh/known_hosts
+	stage('Update Deployment YAML') {
+    steps {
+        sshagent(['git-key']) {
 
-                        echo "==== Cloning repo for deployment ===="
-                        if [ -d "$DEPLOY_DIR" ]; then
-                            cd $DEPLOY_DIR
-                            git reset --hard
-                            git pull origin main
-                        else
-                            git clone git@github.com:SanthaprakashMahendran/testing-dr.git $DEPLOY_DIR
-                            cd $DEPLOY_DIR
-                        fi
+            sh '''
+                echo "==== Setting up SSH known_hosts ===="
+                mkdir -p ~/.ssh
+                ssh-keyscan github.com >> ~/.ssh/known_hosts
+                chmod 644 ~/.ssh/known_hosts
 
-                        echo "🔁 Updating image tag in deployment.yaml..."
-                        sed -i "s|image: .*|image: $LOCATION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:$VERSION|" deployment.yaml
+                echo "==== Cloning repo for deployment ===="
 
-                        echo "📦 Committing updated deployment.yaml to Git..."
-                        git config user.name "jenkins"
-                        git config user.email "jenkins@example.com"
-                        git add deployment.yaml
-                        git commit -m "Update image to $VERSION" || echo "No changes to commit"
-                        git push origin main
-                    '''
-                }
-            }
+                if [ -d "$DEPLOY_DIR" ]; then
+                    cd $DEPLOY_DIR
+                    git reset --hard
+                    git pull origin main
+                else
+                    git clone git@github.com:SanthaprakashMahendran/testing-dr.git $DEPLOY_DIR
+                    cd $DEPLOY_DIR
+                fi
+
+                echo "==== Updating container image in deployment.yaml (AWS ECR) ===="
+
+                NEW_IMAGE="$ECR_REGISTRY/$ECR_REPO_NAME/$IMAGE_NAME:$IMAGE_TAG"
+                echo "Using Image: $NEW_IMAGE"
+
+                sed -i "s|image: .*|image: $NEW_IMAGE|" deployment.yaml
+
+                echo "==== Committing updated deployment.yaml to Git ===="
+                git config user.name "jenkins"
+                git config user.email "jenkins@example.com"
+                git add deployment.yaml
+                git commit -m "Update image to $IMAGE_TAG" || echo "No changes to commit"
+                git push origin main
+            '''
         }
+    }
+}
 	
 
     } // stages

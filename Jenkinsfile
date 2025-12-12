@@ -88,7 +88,57 @@ EOF
     }
 }
 
+	stage('Login to ECR') {
+    steps {
+        withCredentials([
+            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+        ]) {
+            sh '''
+                echo "Logging in to Amazon ECR..."
 
+                aws ecr get-login-password --region $AWS_REGION | \
+                    docker login --username AWS --password-stdin $ECR_REGISTRY
+
+                echo "==== ECR Login Successful ===="
+            '''
+        }
+    }
+}
+
+	stage('Build Docker Image') {
+    steps {
+        sh '''
+            echo "==== Building Docker Image ===="
+
+            docker build -t $IMAGE_NAME:$IMAGE_TAG .
+        '''
+    }
+}
+
+
+	stage('Tag Docker Image') {
+    steps {
+        sh '''
+            echo "==== Tagging Docker Image ===="
+
+            docker tag $IMAGE_NAME:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPO_NAME:$IMAGE_TAG
+        '''
+    }
+}
+
+	stage('Push Docker Image') {
+    steps {
+        sh '''
+            echo "==== Pushing Docker Image to ECR ===="
+
+            docker push $ECR_REGISTRY/$ECR_REPO_NAME:$IMAGE_TAG
+
+            echo "==== Docker Image Pushed Successfully ===="
+        '''
+    }
+}
+
+	
 
     } // stages
 

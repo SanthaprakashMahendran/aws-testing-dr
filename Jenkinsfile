@@ -56,6 +56,40 @@ EOF
             }
         }
 
+	stage('Create ECR Repo If Not Exists') {
+    steps {
+        withCredentials([
+            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+        ]) {
+
+            sh '''
+                echo "==== Checking ECR Repository ===="
+
+                EXISTS=$(aws ecr describe-repositories \
+                    --repository-names "$ECR_REPO_NAME" \
+                    --region "$AWS_REGION" \
+                    --query "repositories[0].repositoryName" \
+                    --output text 2>/dev/null || true)
+
+                if [ "$EXISTS" = "None" ] || [ -z "$EXISTS" ]; then
+                    echo "Repository does NOT exist. Creating: $ECR_REPO_NAME"
+
+                    aws ecr create-repository \
+                        --repository-name "$ECR_REPO_NAME" \
+                        --image-tag-mutability MUTABLE \
+                        --region "$AWS_REGION"
+
+                    echo "==== ECR Repository created successfully ===="
+                else
+                    echo "==== ECR Repository already exists: $EXISTS ===="
+                fi
+            '''
+        }
+    }
+}
+
+
+
     } // stages
 
 } // pipeline

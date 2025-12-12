@@ -253,7 +253,7 @@ EOF
                     --nodegroup-name $EKS_NODE_GROUP \
                     --scaling-config minSize=1,maxSize=3,desiredSize=1 \
                     --subnets $SUBNETS \
-                    --instance-types t3.medium \
+                    --instance-types t2.medium \
                     --node-role arn:aws:iam::$AWS_ACCOUNT_ID:role/EKS-NodeRole \
                     --region $AWS_REGION
 

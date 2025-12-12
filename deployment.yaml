@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: my-app
-          image: asia-south1-docker.pkg.dev/project-d1bd05ab-4df5-4a42-847/my-app-repo/my-app:22
+          image: 901718802466.dkr.ecr.us-east-1.amazonaws.com/my-app-repo/my-app:9
           ports:
             - containerPort: 80

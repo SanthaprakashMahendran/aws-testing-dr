@@ -285,23 +285,6 @@ EOF
     }
 }
 
-        stage('Configure kubectl for EKS') {
-    steps {
-        withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
-        ]) {
-            sh '''
-                echo "==== Updating kubeconfig ===="
-
-                aws eks update-kubeconfig \
-                    --region $AWS_REGION \
-                    --name $EKS_CLUSTER_NAME
-
-                kubectl get nodes
-            '''
-        }
-    }
-}
 
 
         stage('Deploy to EKS') {

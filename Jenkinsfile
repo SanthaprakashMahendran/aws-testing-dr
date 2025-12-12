@@ -26,33 +26,37 @@ pipeline {
 
         stage('Authenticate to AWS') {
             steps {
-                sh '''
-                    echo "==== AWS Identity (Before setting creds) ===="
-                    aws sts get-caller-identity || true
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+                ]) {
+                    sh '''
+                        echo "==== AWS Identity (Before setting creds) ===="
+                        aws sts get-caller-identity || true
 
-                    echo "==== Writing AWS Credentials ===="
+                        echo "==== Writing AWS Credentials ===="
 
-                    mkdir -p ~/.aws
+                        mkdir -p ~/.aws
 
-                    cat > ~/.aws/credentials <<EOF
+                        cat > ~/.aws/credentials <<EOF
 [default]
 aws_access_key_id=$AWS_ACCESS_KEY_ID
 aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
 EOF
 
-                    cat > ~/.aws/config <<EOF
+                        cat > ~/.aws/config <<EOF
 [default]
 region = $AWS_REGION
 output = json
 EOF
 
-                    echo "==== AWS Identity (After setting creds) ===="
-                    aws sts get-caller-identity
-                '''
+                        echo "==== AWS Identity (After setting creds) ===="
+                        aws sts get-caller-identity
+                    '''
+                }
             }
         }
 
-    } // ← CLOSES stages
+    } // stages
 
-} // ← CLOSES pipeline
+} // pipeline
 

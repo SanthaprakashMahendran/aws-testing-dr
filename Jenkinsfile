@@ -253,7 +253,7 @@ EOF
                     --nodegroup-name $EKS_NODE_GROUP \
                     --scaling-config minSize=1,maxSize=3,desiredSize=1 \
                     --subnets $SUBNETS \
-                    --instance-types t2.medium \
+                    --instance-types t3.small \
                     --node-role arn:aws:iam::$AWS_ACCOUNT_ID:role/EKS-NodeRole \
                     --region $AWS_REGION
 
@@ -285,6 +285,23 @@ EOF
     }
 }
 
+        stage('Configure kubectl for EKS') {
+    steps {
+        withCredentials([
+            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+        ]) {
+            sh '''
+                echo "==== Updating kubeconfig ===="
+
+                aws eks update-kubeconfig \
+                    --region $AWS_REGION \
+                    --name $EKS_CLUSTER_NAME
+
+                kubectl get nodes
+            '''
+        }
+    }
+}
 
 
         stage('Deploy to EKS') {
@@ -301,7 +318,7 @@ EOF
     }
 }
 
-        
+
 
     } // stages
 

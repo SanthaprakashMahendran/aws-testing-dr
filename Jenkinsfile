@@ -4,7 +4,11 @@ pipeline {
     agent {
         docker {
             image 'aws-jenkins-agent:v1'
-            args '--entrypoint="" --user=root -v /var/run/docker.sock:/var/run/docker.sock'
+            args '''
+            --entrypoint="" --user=root 
+            -v /var/run/docker.sock:/var/run/docker.sock
+            -v /root/AWS_DR:/root/AWS_DR
+        ''' 
         }
     }
 

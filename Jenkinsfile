@@ -174,7 +174,7 @@ EOF
 
                 echo "==== Updating container image in deployment.yaml (AWS ECR) ===="
 
-                NEW_IMAGE="$ECR_REGISTRY/$ECR_REPO_NAME/$IMAGE_NAME:$IMAGE_TAG"
+                NEW_IMAGE="$ECR_REGISTRY/$ECR_REPO_NAME:$IMAGE_TAG"
                 echo "Using Image: $NEW_IMAGE"
 
                 sed -i "s|image: .*|image: $NEW_IMAGE|" deployment.yaml

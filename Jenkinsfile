@@ -278,6 +278,11 @@ EOF
                 aws eks update-kubeconfig \
                     --region $AWS_REGION \
                     --name $EKS_CLUSTER_NAME
+		
+		aws eks update-cluster-config \
+  --name my-eks-cluster \
+  --region $AWS_REGION \
+  --resources-vpc-config endpointPublicAccess=true,publicAccessCidrs="34.93.107.210/32"
 
                 kubectl get nodes
             '''

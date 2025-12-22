@@ -23,10 +23,6 @@ pipeline {
         IMAGE_TAG      = "${env.BUILD_NUMBER}"
 	    DEPLOY_DIR     = "/root/AWS_DR"
         EKS_CLUSTER_NAME = "my-eks-cluster"
-        EKS_NODE_GROUP   = "my-eks-nodegroup"
-        EKS_VERSION      = "1.30"
-        SUBNETS          = "subnet-0dea288dae3c103be subnet-088e403558a50bb7a"
-        SEC_GROUP        = "sg-02700ae462c9b668e"
     }
 
     stages {
@@ -190,83 +186,6 @@ EOF
     }
 }
 	
-    stage('Create EKS Cluster If Not Exists') {
-    steps {
-        withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
-        ]) {
-            sh '''
-                echo "==== Checking if EKS cluster exists ===="
-                STATUS=$(aws eks describe-cluster \
-                    --name $EKS_CLUSTER_NAME \
-                    --region $AWS_REGION \
-                    --query "cluster.status" \
-                    --output text 2>/dev/null || true)
-
-                if [ "$STATUS" = "ACTIVE" ]; then
-                    echo "==== EKS Cluster already exists ===="
-                    exit 0
-                fi
-
-                echo "==== Creating EKS Cluster: $EKS_CLUSTER_NAME ===="
-
-                aws eks create-cluster \
-                    --name $EKS_CLUSTER_NAME \
-                    --region $AWS_REGION \
-                    --kubernetes-version "$EKS_VERSION" \
-                    --role-arn arn:aws:iam::$AWS_ACCOUNT_ID:role/EKS-ClusterRole \
-                    --resources-vpc-config subnetIds=${SUBNETS// /,},securityGroupIds=$SEC_GROUP,endpointPublicAccess=true
-
-                echo "==== Waiting for EKS Control Plane ===="
-                aws eks wait cluster-active \
-                    --name $EKS_CLUSTER_NAME \
-                    --region $AWS_REGION
-            '''
-        }
-    }
-}
-
-        stage('Create Node Group If Not Exists') {
-    steps {
-        withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
-        ]) {
-            sh '''
-                echo "==== Checking if Node Group exists ===="
-
-                NG_STATUS=$(aws eks describe-nodegroup \
-                    --cluster-name $EKS_CLUSTER_NAME \
-                    --nodegroup-name $EKS_NODE_GROUP \
-                    --region $AWS_REGION \
-                    --query "nodegroup.status" \
-                    --output text 2>/dev/null || true)
-
-                if [ "$NG_STATUS" = "ACTIVE" ]; then
-                    echo "==== Node Group already exists ===="
-                    exit 0
-                fi
-
-                echo "==== Creating Node Group: $EKS_NODE_GROUP ===="
-
-                aws eks create-nodegroup \
-                    --cluster-name $EKS_CLUSTER_NAME \
-                    --nodegroup-name $EKS_NODE_GROUP \
-                    --scaling-config minSize=1,maxSize=3,desiredSize=1 \
-                    --subnets $SUBNETS \
-                    --instance-types t3.small \
-                    --node-role arn:aws:iam::$AWS_ACCOUNT_ID:role/EKS-NodeRole \
-                    --region $AWS_REGION
-
-                echo "==== Waiting for Node Group to be active ===="
-                aws eks wait nodegroup-active \
-                    --cluster-name $EKS_CLUSTER_NAME \
-                    --nodegroup-name $EKS_NODE_GROUP \
-                    --region $AWS_REGION
-            '''
-        }
-    }
-}
-
         stage('Configure kubectl for EKS') {
     steps {
         withCredentials([
@@ -278,13 +197,7 @@ EOF
                 aws eks update-kubeconfig \
                     --region $AWS_REGION \
                     --name $EKS_CLUSTER_NAME
-		
-		aws eks update-cluster-config \
-  --name my-eks-cluster \
-  --region $AWS_REGION \
-  --resources-vpc-config endpointPublicAccess=true,publicAccessCidrs="34.93.107.210/32"
 
-                kubectl get nodes
             '''
         }
     }
@@ -299,6 +212,11 @@ EOF
 
             cd $DEPLOY_DIR
             kubectl apply -f deployment.yaml
+            kubectl apply -f service.yaml
+
+            kubectl get nodes
+
+            kubectl get pods -owide
 
             echo "==== Waiting for rollout ===="
             kubectl rollout status deployment/my-app-deployment
@@ -311,3 +229,4 @@ EOF
     } // stages
 
 } // pipeline
+

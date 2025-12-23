@@ -186,44 +186,6 @@ EOF
     }
 }
 	
-        stage('Configure kubectl for EKS') {
-    steps {
-        withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
-        ]) {
-            sh '''
-                echo "==== Updating kubeconfig ===="
-
-                aws eks update-kubeconfig \
-                    --region $AWS_REGION \
-                    --name $EKS_CLUSTER_NAME
-
-            '''
-        }
-    }
-}
-
-
-
-        stage('Deploy to EKS') {
-    steps {
-        sh '''
-            echo "==== Applying Deployment to EKS ===="
-
-            cd $DEPLOY_DIR
-            kubectl apply -f deployment.yaml
-            kubectl apply -f service.yaml
-
-            kubectl get nodes
-
-            kubectl get pods -owide
-
-            echo "==== Waiting for rollout ===="
-            kubectl rollout status deployment/my-app-deployment
-        '''
-    }
-}
-
 
 
     } // stages
